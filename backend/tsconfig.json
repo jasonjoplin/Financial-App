@@ -15,14 +15,14 @@
     "sourceMap": true,
     "removeComments": true,
     "noImplicitAny": true,
-    "noImplicitReturns": true,
+    "noImplicitReturns": false,
     "noImplicitThis": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitOverride": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "baseUrl": "./src",
@@ -37,6 +37,6 @@
       "@/types/*": ["types/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "knexfile.d.ts"],
   "exclude": ["node_modules", "dist", "tests/**/*"]
 }

@@ -1,3 +1,7 @@
+import { Request } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
+import { ParsedQs } from 'qs';
+
 export interface User {
   id: string;
   email: string;
@@ -36,7 +40,7 @@ export interface Company {
   updated_at: Date;
 }
 
-export interface AuthRequest extends Request {
+export interface AuthRequest extends Request<ParamsDictionary, any, any, ParsedQs> {
   user?: User;
   company?: Company;
 }

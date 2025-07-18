@@ -420,6 +420,8 @@ export default function AccountsPage() {
           onClose={handleCloseDialog}
           maxWidth="sm"
           fullWidth
+          disableAutoFocus
+          disableEnforceFocus
           PaperProps={{
             sx: {
               bgcolor: 'rgba(20, 27, 45, 0.95)',

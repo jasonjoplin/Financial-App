@@ -12,11 +12,17 @@ export const analyzeTransaction = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const companyId = req.params.companyId;
+    // Handle test endpoint (no company ID in params)
+    const companyId = req.params.companyId || req.company?.id;
+    
+    if (!companyId) {
+      return res.status(400).json({ error: 'No company ID provided' });
+    }
+    
     const analysis: TransactionAnalysis = {
       description: req.body.description,
       amount: parseFloat(req.body.amount),
-      date: new Date(req.body.date),
+      date: req.body.date ? new Date(req.body.date) : new Date(),
       reference: req.body.reference,
       attachment_data: req.body.attachment_data,
       context: req.body.context
@@ -35,6 +41,16 @@ export const analyzeTransaction = async (req: AuthRequest, res: Response) => {
     
     if (!result.success) {
       return res.status(400).json({ error: result.error });
+    }
+    
+    // For test endpoint, don't save to database, just return the analysis
+    if (req.path.includes('/test/')) {
+      return res.json({
+        message: 'Transaction analyzed successfully (test mode)',
+        analysis: result.suggestion,
+        processing_time_ms: result.suggestion?.metadata.processing_time_ms,
+        model_used: result.suggestion?.metadata.model_used
+      });
     }
     
     // Save suggestion to database

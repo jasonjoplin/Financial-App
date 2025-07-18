@@ -29,7 +29,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       .where({ id: user.id })
       .update({ last_login_at: new Date() });
     
-    next();
+    return next();
   } catch (error) {
     logger.error('Authentication error:', error);
     return res.status(401).json({ error: 'Invalid token' });
@@ -46,7 +46,7 @@ export const authorize = (roles: string[]) => {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
-    next();
+    return next();
   };
 };
 
@@ -79,7 +79,7 @@ export const requireCompany = async (req: AuthRequest, res: Response, next: Next
     }
 
     req.company = userCompany;
-    next();
+    return next();
   } catch (error) {
     logger.error('Company authorization error:', error);
     return res.status(500).json({ error: 'Authorization failed' });

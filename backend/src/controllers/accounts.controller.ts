@@ -74,7 +74,7 @@ export const getChartOfAccounts = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const createAccount = async (req: AuthRequest, res: Response) => {
+export const createAccount = async (req: AuthRequest, res: Response): Promise<Response<any> | void> => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -135,7 +135,7 @@ export const createAccount = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const updateAccount = async (req: AuthRequest, res: Response) => {
+export const updateAccount = async (req: AuthRequest, res: Response): Promise<Response<any> | void> => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -188,7 +188,7 @@ export const updateAccount = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const deactivateAccount = async (req: AuthRequest, res: Response) => {
+export const deactivateAccount = async (req: AuthRequest, res: Response): Promise<Response<any> | void> => {
   try {
     const { companyId, accountId } = req.params;
     
@@ -219,10 +219,10 @@ export const deactivateAccount = async (req: AuthRequest, res: Response) => {
       .where({ id: accountId, company_id: companyId })
       .update({ is_active: false, updated_at: new Date() });
     
-    res.json({ message: 'Account deactivated successfully' });
+    return res.json({ message: 'Account deactivated successfully' });
   } catch (error) {
     logger.error('Error deactivating account:', error);
-    res.status(500).json({ error: 'Failed to deactivate account' });
+    return res.status(500).json({ error: 'Failed to deactivate account' });
   }
 };
 

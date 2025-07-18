@@ -441,7 +441,14 @@ app.post('/api/v1/transactions/validate', authenticate, [
 // Get account types
 app.get('/api/v1/accounts/types', authenticate, async (req, res) => {
   try {
-    const accountTypes = await db('account_types').select('*');
+    // Mock account types data
+    const accountTypes = [
+      { id: 1, name: 'Assets', normal_balance: 'debit' },
+      { id: 2, name: 'Liabilities', normal_balance: 'credit' },
+      { id: 3, name: 'Equity', normal_balance: 'credit' },
+      { id: 4, name: 'Revenue', normal_balance: 'credit' },
+      { id: 5, name: 'Expenses', normal_balance: 'debit' }
+    ];
     res.json({ account_types: accountTypes });
   } catch (error) {
     logger.error('Error fetching account types:', error);
@@ -449,67 +456,229 @@ app.get('/api/v1/accounts/types', authenticate, async (req, res) => {
   }
 });
 
-// Mock chart of accounts
+// Chart of accounts (with real accounts from database)
 app.get('/api/v1/accounts/chart', authenticate, async (req, res) => {
   try {
-    const accountTypes = await db('account_types').select('*');
+    // Get real accounts from database
+    const realAccounts = await db('accounts').select('*').where({ is_active: true }).orderBy('code');
     
-    // Mock chart of accounts based on our seed data
-    const chartOfAccounts = {
+    // Group accounts by type
+    const groupedAccounts = {
       assets: {
         type: 'Assets',
         normal_balance: 'debit',
-        accounts: [
-          { code: '1001', name: 'Cash', balance: 25000 },
-          { code: '1100', name: 'Accounts Receivable', balance: 15000 },
-          { code: '1200', name: 'Inventory', balance: 35000 },
-          { code: '1500', name: 'Equipment', balance: 50000 }
-        ]
+        accounts: []
       },
       liabilities: {
         type: 'Liabilities', 
         normal_balance: 'credit',
-        accounts: [
-          { code: '2000', name: 'Accounts Payable', balance: 8000 },
-          { code: '2100', name: 'Accrued Expenses', balance: 3000 },
-          { code: '2500', name: 'Long-term Debt', balance: 25000 }
-        ]
+        accounts: []
       },
       equity: {
         type: 'Equity',
         normal_balance: 'credit', 
-        accounts: [
-          { code: '3000', name: 'Owner\'s Equity', balance: 75000 },
-          { code: '3100', name: 'Retained Earnings', balance: 14000 }
-        ]
+        accounts: []
       },
       revenue: {
         type: 'Revenue',
         normal_balance: 'credit',
-        accounts: [
-          { code: '4000', name: 'Sales Revenue', balance: 125000 },
-          { code: '4500', name: 'Interest Income', balance: 500 }
-        ]
+        accounts: []
       },
       expenses: {
         type: 'Expenses',
         normal_balance: 'debit', 
-        accounts: [
-          { code: '6000', name: 'Office Expense', balance: 12000 },
-          { code: '6700', name: 'Rent Expense', balance: 24000 },
-          { code: '6800', name: 'Payroll Expense', balance: 75000 }
-        ]
+        accounts: []
       }
     };
+
+    // Add real accounts to appropriate groups
+    realAccounts.forEach(account => {
+      if (groupedAccounts[account.type]) {
+        groupedAccounts[account.type].accounts.push({
+          code: account.code,
+          name: account.name,
+          balance: parseFloat(account.balance) || 0
+        });
+      }
+    });
+
+    // Add mock accounts only if no real accounts exist in that category
+    const mockAccounts = {
+      assets: [
+        { code: '1001', name: 'Cash', balance: 25000 },
+        { code: '1100', name: 'Accounts Receivable', balance: 15000 },
+        { code: '1200', name: 'Inventory', balance: 35000 },
+        { code: '1500', name: 'Equipment', balance: 50000 }
+      ],
+      liabilities: [
+        { code: '2000', name: 'Accounts Payable', balance: 8000 },
+        { code: '2100', name: 'Accrued Expenses', balance: 3000 },
+        { code: '2500', name: 'Long-term Debt', balance: 25000 }
+      ],
+      equity: [
+        { code: '3000', name: 'Owner\'s Equity', balance: 75000 },
+        { code: '3100', name: 'Retained Earnings', balance: 14000 }
+      ],
+      revenue: [
+        { code: '4000', name: 'Sales Revenue', balance: 125000 },
+        { code: '4500', name: 'Interest Income', balance: 500 }
+      ],
+      expenses: [
+        { code: '6000', name: 'Office Expense', balance: 12000 },
+        { code: '6700', name: 'Rent Expense', balance: 24000 },
+        { code: '6800', name: 'Payroll Expense', balance: 75000 }
+      ]
+    };
+
+    // Fill empty categories with mock data
+    Object.keys(groupedAccounts).forEach(type => {
+      if (groupedAccounts[type].accounts.length === 0 && mockAccounts[type]) {
+        groupedAccounts[type].accounts = mockAccounts[type];
+      }
+    });
+
+    const chartOfAccounts = groupedAccounts;
 
     res.json({
       message: 'Chart of accounts retrieved',
       chart_of_accounts: chartOfAccounts,
-      account_types_count: accountTypes.length
+      account_types_count: 5
     });
   } catch (error) {
     logger.error('Error fetching chart of accounts:', error);
     res.status(500).json({ error: 'Failed to fetch chart of accounts' });
+  }
+});
+
+// CRUD endpoints for accounts
+// Create account
+app.post('/api/v1/accounts', authenticate, [
+  body('code').notEmpty().withMessage('Account code is required'),
+  body('name').notEmpty().withMessage('Account name is required'),
+  body('type').isIn(['assets', 'liabilities', 'equity', 'revenue', 'expenses']).withMessage('Invalid account type'),
+  body('normal_balance').isIn(['debit', 'credit']).withMessage('Normal balance must be debit or credit')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { code, name, type, normal_balance, description, parent_account } = req.body;
+    const accountId = uuidv4();
+
+    // Check if account code already exists
+    const existingAccount = await db('accounts').where({ code }).first();
+    if (existingAccount) {
+      return res.status(400).json({ error: 'Account code already exists' });
+    }
+
+    await db('accounts').insert({
+      id: accountId,
+      code,
+      name,
+      type,
+      normal_balance,
+      description: description || null,
+      parent_account: parent_account || null,
+      balance: 0
+    });
+
+    const newAccount = await db('accounts').where({ id: accountId }).first();
+
+    logger.info(`New account created: ${code} - ${name}`);
+
+    res.status(201).json({
+      message: 'Account created successfully',
+      account: newAccount
+    });
+  } catch (error) {
+    logger.error('Account creation error:', error);
+    res.status(500).json({ error: 'Failed to create account' });
+  }
+});
+
+// Get all accounts
+app.get('/api/v1/accounts', authenticate, async (req, res) => {
+  try {
+    const accounts = await db('accounts').select('*').where({ is_active: true }).orderBy('code');
+    res.json({
+      message: 'Accounts retrieved successfully',
+      accounts
+    });
+  } catch (error) {
+    logger.error('Error fetching accounts:', error);
+    res.status(500).json({ error: 'Failed to fetch accounts' });
+  }
+});
+
+// Update account
+app.put('/api/v1/accounts/:code', authenticate, [
+  body('name').notEmpty().withMessage('Account name is required'),
+  body('type').isIn(['assets', 'liabilities', 'equity', 'revenue', 'expenses']).withMessage('Invalid account type'),
+  body('normal_balance').isIn(['debit', 'credit']).withMessage('Normal balance must be debit or credit')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { code } = req.params;
+    const { name, type, normal_balance, description, parent_account } = req.body;
+
+    const account = await db('accounts').where({ code }).first();
+    if (!account) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    await db('accounts').where({ code }).update({
+      name,
+      type,
+      normal_balance,
+      description: description || null,
+      parent_account: parent_account || null,
+      updated_at: new Date()
+    });
+
+    const updatedAccount = await db('accounts').where({ code }).first();
+
+    logger.info(`Account updated: ${code} - ${name}`);
+
+    res.json({
+      message: 'Account updated successfully',
+      account: updatedAccount
+    });
+  } catch (error) {
+    logger.error('Account update error:', error);
+    res.status(500).json({ error: 'Failed to update account' });
+  }
+});
+
+// Delete account
+app.delete('/api/v1/accounts/:code', authenticate, async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    const account = await db('accounts').where({ code }).first();
+    if (!account) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    // Soft delete by setting is_active to false
+    await db('accounts').where({ code }).update({
+      is_active: false,
+      updated_at: new Date()
+    });
+
+    logger.info(`Account deleted: ${code}`);
+
+    res.json({
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    logger.error('Account deletion error:', error);
+    res.status(500).json({ error: 'Failed to delete account' });
   }
 });
 

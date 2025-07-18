@@ -8,11 +8,11 @@ module.exports = {
     },
     useNullAsDefault: true,
     migrations: {
-      directory: './database/migrations',
+      directory: '../database/migrations',
       tableName: 'knex_migrations'
     },
     seeds: {
-      directory: './database/seeds'
+      directory: '../database/seeds'
     }
   },
 
@@ -30,11 +30,11 @@ module.exports = {
       max: 2
     },
     migrations: {
-      directory: './database/migrations',
+      directory: '../database/migrations',
       tableName: 'knex_migrations'
     },
     seeds: {
-      directory: './database/seeds'
+      directory: '../database/seeds'
     }
   },
 
@@ -53,11 +53,11 @@ module.exports = {
       max: 20
     },
     migrations: {
-      directory: './database/migrations',
+      directory: '../database/migrations',
       tableName: 'knex_migrations'
     },
     seeds: {
-      directory: './database/seeds'
+      directory: '../database/seeds'
     }
   }
 };

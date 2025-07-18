@@ -69,7 +69,7 @@ export const register = async (req: Request<{}, {}, RegisterRequest>, res: Respo
     // Remove password hash from response
     const { password_hash, ...userResponse } = result.user;
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'User registered successfully',
       user: userResponse,
       company: result.company,
@@ -77,7 +77,7 @@ export const register = async (req: Request<{}, {}, RegisterRequest>, res: Respo
     });
   } catch (error) {
     logger.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    return res.status(500).json({ error: 'Registration failed' });
   }
 };
 
@@ -127,7 +127,7 @@ export const login = async (req: Request<{}, {}, LoginRequest>, res: Response) =
     // Remove password hash from response
     const { password_hash, ...userResponse } = user;
 
-    res.json({
+    return res.json({
       message: 'Login successful',
       user: userResponse,
       company: userCompany || null,
@@ -135,7 +135,7 @@ export const login = async (req: Request<{}, {}, LoginRequest>, res: Response) =
     });
   } catch (error) {
     logger.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    return res.status(500).json({ error: 'Login failed' });
   }
 };
 

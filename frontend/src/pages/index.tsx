@@ -68,6 +68,15 @@ export default function Home() {
   const [email, setEmail] = useState('test@financialai.com')
   const [password, setPassword] = useState('password123')
   const [loginLoading, setLoginLoading] = useState(false)
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [signUpData, setSignUpData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    phone: '',
+    company_name: ''
+  })
   const [healthData, setHealthData] = useState<HealthData | null>(null)
   const [transactionDescription, setTransactionDescription] = useState('Office supplies from Staples')
   const [transactionAmount, setTransactionAmount] = useState('156.78')
@@ -81,7 +90,7 @@ export default function Home() {
 
   const fetchHealthData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/health`)
+      const response = await fetch('http://localhost:3001/health')
       const data = await response.json()
       setHealthData(data)
     } catch (error) {
@@ -93,6 +102,32 @@ export default function Home() {
     setLoginLoading(true)
     await login(email, password)
     setLoginLoading(false)
+  }
+
+  const handleSignUp = async () => {
+    setLoginLoading(true)
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signUpData),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success('Account created successfully! Logging you in...')
+        await login(signUpData.email, signUpData.password)
+      } else {
+        toast.error(data.error || 'Registration failed')
+      }
+    } catch (error) {
+      toast.error('Connection error. Please try again.')
+    } finally {
+      setLoginLoading(false)
+    }
   }
 
   const analyzeTransaction = async () => {
@@ -223,50 +258,132 @@ export default function Home() {
               <Card className="glass-card animate-slide-in">
                 <CardContent>
                   <Typography variant="h5" gutterBottom className="gradient-text">
-                    🔐 Access Financial AI
+                    🔐 {isSignUp ? 'Create Account' : 'Access Financial AI'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mb={3}>
-                    Login to experience intelligent accounting automation
+                    {isSignUp ? 'Create your account to get started' : 'Login to experience intelligent accounting automation'}
                   </Typography>
                   
-                  <Box component="form" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
-                    <TextField
-                      fullWidth
-                      label="Email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      margin="normal"
-                      required
-                    />
-                    <TextField
-                      fullWidth
-                      label="Password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      margin="normal"
-                      required
-                    />
-                    <Button
-                      type="submit"
-                      fullWidth
-                      variant="contained"
-                      size="large"
-                      disabled={loginLoading}
-                      sx={{ mt: 3 }}
+                  {!isSignUp ? (
+                    <Box component="form" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+                      <TextField
+                        fullWidth
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        margin="normal"
+                        required
+                      />
+                      <TextField
+                        fullWidth
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        margin="normal"
+                        required
+                      />
+                      <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        size="large"
+                        disabled={loginLoading}
+                        sx={{ mt: 3 }}
+                      >
+                        {loginLoading ? <CircularProgress size={24} /> : 'Login to Financial AI'}
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Box component="form" onSubmit={(e) => { e.preventDefault(); handleSignUp(); }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            label="First Name"
+                            value={signUpData.first_name}
+                            onChange={(e) => setSignUpData({...signUpData, first_name: e.target.value})}
+                            margin="normal"
+                            required
+                          />
+                        </Grid>
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            label="Last Name"
+                            value={signUpData.last_name}
+                            onChange={(e) => setSignUpData({...signUpData, last_name: e.target.value})}
+                            margin="normal"
+                            required
+                          />
+                        </Grid>
+                      </Grid>
+                      <TextField
+                        fullWidth
+                        label="Email"
+                        type="email"
+                        value={signUpData.email}
+                        onChange={(e) => setSignUpData({...signUpData, email: e.target.value})}
+                        margin="normal"
+                        required
+                      />
+                      <TextField
+                        fullWidth
+                        label="Password"
+                        type="password"
+                        value={signUpData.password}
+                        onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
+                        margin="normal"
+                        required
+                      />
+                      <TextField
+                        fullWidth
+                        label="Phone (optional)"
+                        value={signUpData.phone}
+                        onChange={(e) => setSignUpData({...signUpData, phone: e.target.value})}
+                        margin="normal"
+                      />
+                      <TextField
+                        fullWidth
+                        label="Company Name"
+                        value={signUpData.company_name}
+                        onChange={(e) => setSignUpData({...signUpData, company_name: e.target.value})}
+                        margin="normal"
+                        required
+                      />
+                      <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        size="large"
+                        disabled={loginLoading}
+                        sx={{ mt: 3 }}
+                      >
+                        {loginLoading ? <CircularProgress size={24} /> : 'Create Account'}
+                      </Button>
+                    </Box>
+                  )}
+
+                  <Box mt={3} textAlign="center">
+                    <Button 
+                      variant="text" 
+                      onClick={() => setIsSignUp(!isSignUp)}
+                      sx={{ textTransform: 'none' }}
                     >
-                      {loginLoading ? <CircularProgress size={24} /> : 'Login to Financial AI'}
+                      {isSignUp ? 'Already have an account? Login' : 'Need an account? Sign up'}
                     </Button>
                   </Box>
 
-                  <Box mt={3} p={2} bgcolor="rgba(0, 245, 255, 0.1)" borderRadius={2}>
-                    <Typography variant="body2" color="primary">
-                      <strong>Demo Credentials:</strong><br />
-                      Email: test@financialai.com<br />
-                      Password: password123
-                    </Typography>
-                  </Box>
+                  {!isSignUp && (
+                    <Box mt={3} p={2} bgcolor="rgba(0, 245, 255, 0.1)" borderRadius={2}>
+                      <Typography variant="body2" color="primary">
+                        <strong>Demo Credentials:</strong><br />
+                        Email: test@financialai.com<br />
+                        Password: password123
+                      </Typography>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             </Grid>

@@ -65,11 +65,25 @@ const getAgentPerformanceValidation = [
 
 // Routes
 
-// Transaction Analysis
+// Transaction Analysis (with test endpoint)
 router.post('/:companyId/analyze', 
   authenticate, 
   requireCompany, 
   analyzeTransactionValidation, 
+  analyzeTransaction
+);
+
+// Test endpoint for AI analysis without company ID requirement
+router.post('/test/analyze', 
+  authenticate, 
+  [
+    body('description').notEmpty().trim(),
+    body('amount').isNumeric(),
+    body('date').isISO8601().optional(),
+    body('reference').optional().trim(),
+    body('attachment_data').optional().trim(),
+    body('context').optional().isObject()
+  ],
   analyzeTransaction
 );
 

@@ -40,7 +40,8 @@ import {
   Home as HomeIcon,
   PhotoCamera as OCRIcon,
   Search as SearchIcon,
-  Notifications as NotificationIcon
+  Notifications as NotificationIcon,
+  Assignment as TaxIcon
 } from '@mui/icons-material'
 
 const drawerWidth = 280
@@ -127,6 +128,12 @@ export default function Layout({ children, title = 'Financial AI' }: LayoutProps
       icon: <OCRIcon />, 
       path: '/ocr', 
       description: 'Document Processing' 
+    },
+    { 
+      label: 'Tax Agent', 
+      icon: <TaxIcon />, 
+      path: '/tax-agent', 
+      description: 'AI Tax Form Processing' 
     },
     { 
       label: 'AI Settings', 
