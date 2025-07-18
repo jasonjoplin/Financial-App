@@ -162,66 +162,18 @@ export default function PaymentsPage() {
 
   const fetchPayments = async () => {
     try {
-      // Mock payment data
-      const mockPayments: Payment[] = [
-        {
-          id: '1',
-          type: 'receipt',
-          reference: 'PMT-001',
-          date: '2024-01-15',
-          contact_id: '1',
-          contact_name: 'Acme Corporation',
-          invoice_id: '1',
-          invoice_number: 'INV-001',
-          amount: 2712.50,
-          payment_method: 'bank_transfer',
-          account_code: '1001',
-          account_name: 'Cash',
-          description: 'Payment for Invoice INV-001',
-          status: 'completed',
-          bank_reference: 'TXN-20240115-001',
-          reconciled: true,
-          reconciled_date: '2024-01-16T10:00:00Z',
-          created_at: '2024-01-15T14:30:00Z'
-        },
-        {
-          id: '2',
-          type: 'payment',
-          reference: 'PMT-002',
-          date: '2024-01-10',
-          contact_id: '2',
-          contact_name: 'Office Supplies Inc',
-          invoice_id: '2',
-          invoice_number: 'BILL-001',
-          amount: 879.61,
-          payment_method: 'bank_transfer',
-          account_code: '1001',
-          account_name: 'Cash',
-          description: 'Payment for Bill BILL-001',
-          status: 'completed',
-          bank_reference: 'TXN-20240110-002',
-          reconciled: true,
-          reconciled_date: '2024-01-11T09:00:00Z',
-          created_at: '2024-01-10T16:45:00Z'
-        },
-        {
-          id: '3',
-          type: 'receipt',
-          reference: 'PMT-003',
-          date: '2024-01-18',
-          contact_id: '3',
-          contact_name: 'Sarah Johnson',
-          amount: 1200.00,
-          payment_method: 'check',
-          account_code: '1001',
-          account_name: 'Cash',
-          description: 'Payment for consulting services',
-          status: 'pending',
-          reconciled: false,
-          created_at: '2024-01-18T11:20:00Z'
-        }
-      ]
-      setPayments(mockPayments)
+      // Fetch real payments from API
+      const response = await fetch('http://localhost:3001/api/v1/payments', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setPayments(data.payments || [])
+      } else {
+        // Start with empty payments for new users
+        setPayments([])
+      }
     } catch (error) {
       toast.error('Failed to load payments')
     } finally {
@@ -231,52 +183,8 @@ export default function PaymentsPage() {
 
   const fetchBankTransactions = async () => {
     try {
-      // Mock bank transaction data
-      const mockBankTransactions: BankTransaction[] = [
-        {
-          id: 'bt-1',
-          date: '2024-01-15',
-          description: 'ACME CORP PAYMENT REF:INV001',
-          amount: 2712.50,
-          type: 'credit',
-          reference: 'TXN-20240115-001',
-          balance: 15000.00,
-          matched_payment_id: '1',
-          reconciled: true
-        },
-        {
-          id: 'bt-2',
-          date: '2024-01-10',
-          description: 'OFFICE SUPPLIES INC',
-          amount: -879.61,
-          type: 'debit',
-          reference: 'TXN-20240110-002',
-          balance: 12287.50,
-          matched_payment_id: '2',
-          reconciled: true
-        },
-        {
-          id: 'bt-3',
-          date: '2024-01-18',
-          description: 'UNKNOWN DEPOSIT',
-          amount: 1200.00,
-          type: 'credit',
-          reference: 'TXN-20240118-003',
-          balance: 16200.00,
-          reconciled: false
-        },
-        {
-          id: 'bt-4',
-          date: '2024-01-20',
-          description: 'MONTHLY SERVICE FEE',
-          amount: -25.00,
-          type: 'debit',
-          reference: 'TXN-20240120-004',
-          balance: 16175.00,
-          reconciled: false
-        }
-      ]
-      setBankTransactions(mockBankTransactions)
+      // For new users, start with empty bank transactions
+      setBankTransactions([])
     } catch (error) {
       console.error('Failed to fetch bank transactions:', error)
     }
@@ -284,44 +192,10 @@ export default function PaymentsPage() {
 
   const generateReconciliationSuggestions = async () => {
     try {
-      // AI-powered reconciliation suggestions
-      const mockSuggestions: ReconciliationSuggestion[] = [
-        {
-          bank_transaction: {
-            id: 'bt-3',
-            date: '2024-01-18',
-            description: 'UNKNOWN DEPOSIT',
-            amount: 1200.00,
-            type: 'credit',
-            reference: 'TXN-20240118-003',
-            balance: 16200.00,
-            reconciled: false
-          },
-          suggested_payments: [
-            {
-              id: '3',
-              type: 'receipt',
-              reference: 'PMT-003',
-              date: '2024-01-18',
-              contact_id: '3',
-              contact_name: 'Sarah Johnson',
-              amount: 1200.00,
-              payment_method: 'check',
-              account_code: '1001',
-              account_name: 'Cash',
-              description: 'Payment for consulting services',
-              status: 'pending',
-              reconciled: false,
-              created_at: '2024-01-18T11:20:00Z'
-            }
-          ],
-          confidence_score: 0.95,
-          auto_match: true
-        }
-      ]
-      setReconciliationSuggestions(mockSuggestions)
+      // For new users, start with empty reconciliation suggestions
+      setReconciliationSuggestions([])
     } catch (error) {
-      console.error('Failed to generate suggestions:', error)
+      console.error('Failed to generate reconciliation suggestions:', error)
     }
   }
 

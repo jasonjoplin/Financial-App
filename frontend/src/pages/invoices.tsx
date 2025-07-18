@@ -135,68 +135,18 @@ export default function InvoicesPage() {
 
   const fetchInvoices = async () => {
     try {
-      // Mock invoice data for now
-      const mockInvoices: Invoice[] = [
-        {
-          id: '1',
-          type: 'invoice',
-          number: 'INV-001',
-          contact_id: '1',
-          contact_name: 'Acme Corporation',
-          contact_email: 'billing@acme.com',
-          issue_date: '2024-01-15',
-          due_date: '2024-02-14',
-          subtotal: 2500.00,
-          tax_amount: 212.50,
-          discount_amount: 0,
-          total_amount: 2712.50,
-          amount_paid: 0,
-          amount_due: 2712.50,
-          status: 'sent',
-          items: [
-            {
-              id: '1',
-              description: 'Consulting Services - January 2024',
-              quantity: 40,
-              rate: 62.50,
-              amount: 2500.00,
-              account_code: '4000'
-            }
-          ],
-          notes: 'Thank you for your business!',
-          terms: 'Payment due within 30 days',
-          created_at: '2024-01-15T10:30:00Z'
-        },
-        {
-          id: '2',
-          type: 'bill',
-          number: 'BILL-001',
-          contact_id: '2',
-          contact_name: 'Office Supplies Inc',
-          contact_email: 'billing@officesupplies.com',
-          issue_date: '2024-01-10',
-          due_date: '2024-01-25',
-          subtotal: 856.78,
-          tax_amount: 72.83,
-          discount_amount: 50.00,
-          total_amount: 879.61,
-          amount_paid: 879.61,
-          amount_due: 0,
-          status: 'paid',
-          items: [
-            {
-              id: '1',
-              description: 'Office Supplies - Paper, Pens, Folders',
-              quantity: 1,
-              rate: 856.78,
-              amount: 856.78,
-              account_code: '6700'
-            }
-          ],
-          created_at: '2024-01-10T14:20:00Z'
-        }
-      ]
-      setInvoices(mockInvoices)
+      // Fetch real invoices from API
+      const response = await fetch('http://localhost:3001/api/v1/invoices', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setInvoices(data.invoices || [])
+      } else {
+        // Start with empty invoices for new users
+        setInvoices([])
+      }
     } catch (error) {
       toast.error('Failed to load invoices')
     } finally {

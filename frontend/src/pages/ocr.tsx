@@ -137,113 +137,18 @@ export default function OCRPage() {
 
   const fetchDocuments = async () => {
     try {
-      // Mock OCR document data
-      const mockDocuments: OCRDocument[] = [
-        {
-          id: '1',
-          filename: 'office_supplies_receipt.jpg',
-          file_type: 'image/jpeg',
-          file_size: 2048576,
-          upload_date: '2024-01-15T10:30:00Z',
-          processing_status: 'completed',
-          ocr_confidence: 0.95,
-          extracted_data: {
-            document_type: 'receipt',
-            vendor_name: 'Office Depot',
-            vendor_address: '123 Business Blvd, City, ST 12345',
-            date: '2024-01-15',
-            invoice_number: 'REC-789456',
-            total_amount: 156.78,
-            tax_amount: 12.54,
-            line_items: [
-              { description: 'Copy Paper A4 - 10 Reams', quantity: 10, rate: 8.99, amount: 89.90 },
-              { description: 'Blue Ink Pens - Pack of 12', quantity: 3, rate: 15.99, amount: 47.97 },
-              { description: 'File Folders - Box of 100', quantity: 1, rate: 18.91, amount: 18.91 }
-            ],
-            payment_terms: 'Cash',
-            due_date: '2024-01-15'
-          },
-          ai_analysis: {
-            suggested_account_codes: ['6700', '1001'],
-            confidence_score: 0.92,
-            transaction_type: 'expense',
-            journal_entries: [
-              {
-                account_code: '6700',
-                account_name: 'Office Expense',
-                debit_amount: 156.78,
-                credit_amount: 0,
-                description: 'Office supplies from Office Depot'
-              },
-              {
-                account_code: '1001',
-                account_name: 'Cash',
-                debit_amount: 0,
-                credit_amount: 156.78,
-                description: 'Payment for office supplies'
-              }
-            ]
-          },
-          reviewed: true,
-          approved: false
-        },
-        {
-          id: '2',
-          filename: 'utility_bill.pdf',
-          file_type: 'application/pdf',
-          file_size: 1024768,
-          upload_date: '2024-01-12T14:20:00Z',
-          processing_status: 'completed',
-          ocr_confidence: 0.88,
-          extracted_data: {
-            document_type: 'bill',
-            vendor_name: 'City Electric Company',
-            vendor_address: '456 Power St, City, ST 12345',
-            date: '2024-01-10',
-            invoice_number: 'ELEC-2024-001',
-            total_amount: 245.67,
-            tax_amount: 19.65,
-            due_date: '2024-02-10',
-            payment_terms: 'Net 30'
-          },
-          ai_analysis: {
-            suggested_account_codes: ['6800', '2001'],
-            confidence_score: 0.89,
-            transaction_type: 'expense',
-            journal_entries: [
-              {
-                account_code: '6800',
-                account_name: 'Utilities Expense',
-                debit_amount: 245.67,
-                credit_amount: 0,
-                description: 'Electric utility bill - January 2024'
-              },
-              {
-                account_code: '2001',
-                account_name: 'Accounts Payable',
-                debit_amount: 0,
-                credit_amount: 245.67,
-                description: 'City Electric Company bill due 2/10/24'
-              }
-            ]
-          },
-          reviewed: false,
-          approved: false
-        },
-        {
-          id: '3',
-          filename: 'client_invoice_processing.png',
-          file_type: 'image/png',
-          file_size: 3145728,
-          upload_date: '2024-01-18T09:15:00Z',
-          processing_status: 'processing',
-          ocr_confidence: 0,
-          extracted_data: {},
-          reviewed: false,
-          approved: false
-        }
-      ]
-      setDocuments(mockDocuments)
+      // Fetch real documents from API
+      const response = await fetch('http://localhost:3001/api/v1/documents', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setDocuments(data.documents || [])
+      } else {
+        // Start with empty documents for new users
+        setDocuments([])
+      }
     } catch (error) {
       toast.error('Failed to load documents')
     } finally {

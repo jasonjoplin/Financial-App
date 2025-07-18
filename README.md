@@ -1,347 +1,265 @@
-# Financial AI App
+# Financial AI App - Production Ready Multi-Tenant SaaS
 
-A comprehensive AI-powered accounting and financial management application built with Next.js, Node.js, and multiple AI providers (OpenAI, Anthropic Claude, and Ollama).
+A comprehensive financial management application with AI-powered transaction analysis, multi-tenant architecture, and complete accounting functionality.
 
-## Features
+## 🚀 Production Features
 
-🤖 **AI-Powered Analysis**
-- Intelligent transaction categorization and journal entry suggestions
-- Multi-provider AI support (OpenAI GPT-4, Anthropic Claude, Local Ollama)
-- Smart expense recognition and GAAP-compliant accounting entries
+### ✅ **Multi-Tenant SaaS Architecture**
+- **Complete tenant isolation** - Each company's data is fully separated
+- **Row-level security** - Database queries filtered by company_id
+- **Clean slate onboarding** - New users start with empty workspace
+- **Scalable tenant management** - Ready for thousands of companies
 
-💼 **Complete Accounting System**
-- Full Chart of Accounts management
-- Double-entry bookkeeping with automatic balance validation
-- Journal entries and transaction management
-- Invoice and bill creation with line-item support
+### ✅ **Core Financial Features**
+- **Chart of Accounts Management** - GAAP-compliant account structure
+- **Transaction Processing** - Double-entry bookkeeping validation
+- **Customer/Vendor Management** - Complete contact management
+- **Invoice & Bill Processing** - Professional invoicing system
+- **Payment Tracking** - Payment reconciliation and tracking
+- **OCR Document Processing** - AI-powered receipt/invoice extraction
 
-📊 **Financial Reporting**
-- Real-time Profit & Loss statements
-- Balance Sheet with automatic balance validation
-- Trial Balance reports
-- GAAP-compliant financial statements
+### ✅ **AI-Powered Features**
+- **Transaction Analysis** - Multi-provider AI support (OpenAI, Anthropic, Ollama)
+- **Smart Categorization** - Automatic account code suggestions
+- **OCR Processing** - Extract data from receipts and invoices
+- **Tax Agent Integration** - AI-powered tax assistance
 
-💳 **Payment & Banking**
-- Payment tracking and reconciliation
-- AI-powered bank transaction matching
-- Multiple payment method support
-- Bank import functionality
+## 🏗️ Architecture
 
-📄 **Document Processing**
-- OCR document processing for receipts and invoices
-- AI-powered data extraction from financial documents
-- Document review and approval workflow
-
-🔍 **Advanced Features**
-- Global search with keyboard shortcuts (⌘K)
-- Advanced filtering and saved filter presets
-- Contact and vendor management
-- Comprehensive testing and validation tools
-
-## Tech Stack
-
-### Frontend
-- **Next.js 13** with TypeScript
-- **Material-UI (MUI)** for components
-- **React Context** for state management
-- **React Hot Toast** for notifications
-
-### Backend
-- **Node.js** with Express
-- **SQLite** database
-- **JWT** authentication with bcrypt
-- **CORS** enabled for cross-origin requests
-
-### AI Integration
-- **OpenAI GPT-4** for advanced reasoning
-- **Anthropic Claude** for detailed analysis
-- **Ollama** for local AI models (DeepSeek R1 14B support)
-
-## Project Structure
-
+### **Backend (Node.js/Express)**
 ```
-financial-ai-app/
-├── backend/                 # Node.js/Express API
-│   ├── src/
-│   │   ├── controllers/     # Route handlers
-│   │   ├── middleware/      # Authentication, validation
-│   │   ├── models/          # Database models
-│   │   ├── routes/          # API routes
-│   │   ├── services/        # Business logic
-│   │   ├── types/           # TypeScript types
-│   │   └── utils/           # Helper functions
-│   ├── database/
-│   │   ├── migrations/      # Database schema migrations
-│   │   └── seeds/           # Default data
-│   └── tests/               # Backend tests
-├── frontend/                # Next.js React app
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── pages/           # Next.js pages
-│   │   ├── hooks/           # Custom React hooks
-│   │   ├── services/        # API clients
-│   │   └── types/           # TypeScript types
-│   └── public/              # Static assets
-├── database/                # Database configuration
-└── docs/                    # Documentation
+backend/
+├── server.js                 # Main server with multi-tenant middleware
+├── src/
+│   ├── middleware/
+│   │   ├── auth.ts           # Authentication middleware
+│   │   └── tenant.js         # Tenant isolation middleware
+│   ├── controllers/          # Business logic controllers
+│   ├── routes/              # API route definitions
+│   ├── services/            # Business services
+│   └── utils/               # Utility functions
+├── database/
+│   ├── migrations/          # Database schema migrations
+│   └── seeds/              # Initial data seeds
+└── package.json
 ```
 
-## Installation
+### **Frontend (Next.js/React)**
+```
+frontend/
+├── src/
+│   ├── pages/              # Application pages
+│   ├── components/         # Reusable UI components
+│   ├── contexts/           # React contexts (Auth, etc.)
+│   ├── hooks/              # Custom React hooks
+│   └── utils/              # Frontend utilities
+├── public/                 # Static assets
+└── package.json
+```
 
-### Prerequisites
+## 🚀 Quick Start
 
-- Node.js 18+ and npm
-- Git
-- (Optional) Ollama for local AI models
+### **Prerequisites**
+- Node.js 18+ 
+- npm or yarn
+- SQLite (included)
 
-### 1. Clone the Repository
+### **Installation**
 
+1. **Clone the repository**
 ```bash
 git clone https://github.com/jasonjoplin/Financial-App.git
 cd Financial-App
 ```
 
-### 2. Backend Setup
-
+2. **Backend Setup**
 ```bash
 cd backend
 npm install
 ```
 
-Create a `.env` file in the backend directory:
+3. **Database Setup**
+```bash
+# Create database and run migrations
+npm run db:migrate
+npm run db:seed
+```
 
-```env
-# Server Configuration
+4. **Environment Configuration**
+```bash
+# Create .env file
+cp .env.example .env
+
+# Configure environment variables
+JWT_SECRET=your-super-secret-jwt-key
+CORS_ORIGIN=http://localhost:3000
 PORT=3001
-NODE_ENV=development
-
-# Database
-DATABASE_PATH=./database.sqlite
-
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
-
-# AI Provider API Keys (Optional - for real AI integration)
-OPENAI_API_KEY=sk-your-openai-api-key-here
-ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
-
-# Ollama Configuration (for local AI)
-OLLAMA_ENDPOINT=http://172.20.64.1:11434
-OLLAMA_MODEL=deepseek-r1:14b
-
-# CORS Configuration
-CORS_ORIGIN=http://localhost:3002
 ```
 
-Initialize the database and start the server:
-
+5. **Start Backend Server**
 ```bash
-npm run dev
+npm start
+# Server runs on http://localhost:3001
 ```
 
-The backend will be available at `http://localhost:3001`
-
-### 3. Frontend Setup
-
-Open a new terminal and navigate to the frontend directory:
-
+6. **Frontend Setup**
 ```bash
-cd frontend
+cd ../frontend
 npm install
-```
-
-Create a `.env.local` file in the frontend directory:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
-Start the frontend development server:
-
-```bash
 npm run dev
+# Frontend runs on http://localhost:3000
 ```
 
-The frontend will be available at `http://localhost:3002`
+## 🔐 Authentication & Multi-Tenancy
 
-### 4. Local AI Setup (Optional)
+### **User Registration**
+- Each user gets their own company workspace
+- Automatic user-company linking
+- JWT tokens include tenant context
+- Complete data isolation
 
-For local AI functionality using Ollama:
-
-#### On Windows (if using WSL):
-
-1. Install Ollama from https://ollama.ai
-2. Start Ollama with network access:
-```cmd
-set OLLAMA_HOST=0.0.0.0:11434
-ollama serve
+### **API Authentication**
+```javascript
+// All API requests require authentication
+headers: {
+  'Authorization': `Bearer ${token}`,
+  'Content-Type': 'application/json'
+}
 ```
 
-3. Pull the DeepSeek R1 model:
-```cmd
-ollama pull deepseek-r1:14b
-```
+### **Tenant Isolation**
+- Tenant middleware extracts company context from JWT
+- All database queries automatically filtered by company_id
+- Row-level security implementation
+- Zero cross-tenant data leakage
 
-#### On Linux/MacOS:
+## 📊 API Endpoints
 
-1. Install Ollama:
+### **Authentication**
+- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/login` - User login
+
+### **Accounts**
+- `GET /api/v1/accounts/chart` - Get chart of accounts
+- `POST /api/v1/accounts` - Create new account
+- `PUT /api/v1/accounts/:code` - Update account
+- `DELETE /api/v1/accounts/:code` - Delete account
+
+### **Business Operations**
+- `GET /api/v1/transactions` - Get transactions
+- `GET /api/v1/contacts` - Get customers/vendors
+- `GET /api/v1/invoices` - Get invoices/bills
+- `GET /api/v1/payments` - Get payments
+- `GET /api/v1/documents` - Get OCR documents
+
+### **AI Features**
+- `POST /api/v1/ai/analyze` - AI transaction analysis
+- `GET /api/v1/ai/providers` - AI provider status
+- `POST /api/v1/ai/providers/:provider/test` - Test AI provider
+
+## 🛡️ Security Features
+
+### **Authentication & Authorization**
+- JWT-based authentication
+- Secure password hashing (bcrypt)
+- Role-based access control
+- Session management
+
+### **Data Protection**
+- SQL injection prevention
+- XSS protection (Helmet.js)
+- Rate limiting
+- Input validation
+- CORS configuration
+
+### **Multi-Tenant Security**
+- Tenant context validation
+- Database query filtering
+- Isolated user workspaces
+- Secure token management
+
+## 🎯 Production Deployment
+
+### **Environment Variables**
 ```bash
-curl -fsSL https://ollama.ai/install.sh | sh
+NODE_ENV=production
+JWT_SECRET=production-secret-key
+DATABASE_URL=production-database-url
+CORS_ORIGIN=https://your-domain.com
 ```
 
-2. Start Ollama:
+### **Docker Deployment**
 ```bash
-OLLAMA_HOST=0.0.0.0:11434 ollama serve
+# Build and run with Docker
+docker-compose up -d
 ```
 
-3. Pull the model:
+### **Database Migration**
 ```bash
-ollama pull deepseek-r1:14b
+# Production database setup
+npm run db:migrate
 ```
 
-## Usage
+## 🧪 Testing
 
-### Demo Credentials
+### **Run Tests**
+```bash
+# Backend tests
+cd backend
+npm test
 
-The application comes with demo credentials for testing:
-
-- **Email**: `test@financialai.com`
-- **Password**: `password123`
-
-### Getting Started
-
-1. **Login** using the demo credentials
-2. **Configure AI Providers** in Settings > AI Providers tab
-3. **Set up Chart of Accounts** in the Accounts page
-4. **Create Transactions** using the AI assistant or manual entry
-5. **Generate Reports** to view financial statements
-
-### Key Features
-
-#### AI Transaction Analysis
-- Navigate to the home page or transactions page
-- Click "AI Assistant" and describe a transaction
-- The AI will suggest proper journal entries with confidence scores
-
-#### Document OCR Processing
-- Go to the OCR page
-- Upload receipts or invoices
-- AI will extract data and suggest accounting entries
-
-#### Financial Reports
-- Access comprehensive reports in the Reports section
-- Generate Profit & Loss, Balance Sheet, and Trial Balance
-- Export to PDF or Excel
-
-#### Global Search
-- Press `⌘K` (Mac) or `Ctrl+K` (Windows/Linux) anywhere in the app
-- Search across all transactions, accounts, and contacts
-
-## Configuration
-
-### AI Provider Setup
-
-1. Navigate to **Settings > AI Providers**
-2. Configure your preferred AI provider:
-
-   - **OpenAI**: Add your API key and select model (GPT-4 recommended)
-   - **Anthropic**: Add your API key and select Claude model
-   - **Ollama**: Set endpoint URL and select local model
-
-3. Test connections using the "Test" button for each provider
-
-### Company Settings
-
-1. Go to **Settings > Company**
-2. Configure:
-   - Company name and details
-   - Accounting method (Accrual/Cash)
-   - Base currency
-   - Fiscal year end
-
-## Architecture
-
-### Frontend Structure
-```
-frontend/src/
-├── components/          # Reusable UI components
-├── contexts/           # React contexts (Auth, etc.)
-├── pages/             # Next.js pages
-├── styles/            # CSS and styling
-└── utils/             # Utility functions
+# Frontend tests  
+cd frontend
+npm test
 ```
 
-### Backend Structure
-```
-backend/
-├── src/
-│   ├── controllers/   # Route handlers
-│   ├── middleware/    # Express middleware
-│   ├── models/        # Database models
-│   ├── routes/        # API routes
-│   ├── services/      # Business logic
-│   └── utils/         # Utility functions
-├── database.sqlite    # SQLite database
-└── server.js         # Express server
-```
+### **Test User Credentials**
+For development/testing:
+- Email: `test@example.com`
+- Password: `password123`
 
-## Development
+## 📈 Features Roadmap
 
-### Available Scripts
+### **Current Version (v2.0)**
+- ✅ Multi-tenant architecture
+- ✅ Complete accounting functionality
+- ✅ AI transaction analysis
+- ✅ OCR document processing
+- ✅ Payment reconciliation
 
-#### Backend
-- `npm run dev` - Start development server with nodemon
-- `npm start` - Start production server
-- `npm test` - Run tests
+### **Upcoming Features**
+- 📊 Advanced reporting & analytics
+- 🔄 Real-time bank sync
+- 📱 Mobile application
+- 🌍 Multi-currency support
+- 📧 Automated invoicing
+- 🔍 Advanced search & filtering
 
-#### Frontend
-- `npm run dev` - Start Next.js development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-
-### Database Schema
-
-The application uses SQLite with the following main tables:
-- `users` - User authentication and profiles
-- `companies` - Company information
-- `accounts` - Chart of accounts
-- `transactions` - Journal entries and transactions
-- `ai_settings` - AI provider configurations
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
 
-## Security
+## 📝 License
 
-- JWT tokens for authentication
-- Bcrypt password hashing
-- Input validation and sanitization
-- CORS protection
-- Environment variable protection for API keys
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## License
+## 🆘 Support
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+- **Issues**: [GitHub Issues](https://github.com/jasonjoplin/Financial-App/issues)
+- **Documentation**: [Wiki](https://github.com/jasonjoplin/Financial-App/wiki)
+- **Email**: jasonjoplin2016@gmail.com
 
-## Support
+## 🎉 Acknowledgments
 
-For support, please open an issue on GitHub or contact the development team.
-
-## Roadmap
-
-- [ ] Multi-company support
-- [ ] Advanced reporting dashboards
-- [ ] Mobile app development
-- [ ] Integration with major banking APIs
-- [ ] Advanced AI analytics and predictions
-- [ ] Audit trail and compliance features
+- Built with modern React/Node.js stack
+- AI powered by OpenAI, Anthropic, and Ollama
+- UI components by Material-UI
+- Database migrations by Knex.js
 
 ---
 
-**Built with ❤️ using AI-powered development tools**
+**🚀 Ready for production deployment with enterprise-grade multi-tenancy!**

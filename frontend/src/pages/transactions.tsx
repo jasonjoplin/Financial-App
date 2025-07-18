@@ -126,66 +126,18 @@ export default function TransactionsPage() {
 
   const fetchTransactions = async () => {
     try {
-      // Mock transaction data for now - in real app this would come from API
-      const mockTransactions: Transaction[] = [
-        {
-          id: '1',
-          reference: 'JE-001',
-          date: '2024-01-15',
-          description: 'Office supplies purchase',
-          entries: [
-            {
-              account_code: '6700',
-              account_name: 'Office Expense',
-              debit_amount: 156.78,
-              credit_amount: 0,
-              description: 'Office supplies from Staples'
-            },
-            {
-              account_code: '1001',
-              account_name: 'Cash',
-              debit_amount: 0,
-              credit_amount: 156.78,
-              description: 'Payment for office supplies'
-            }
-          ],
-          total_amount: 156.78,
-          is_balanced: true,
-          status: 'posted',
-          created_by: user?.first_name || 'User',
-          created_at: '2024-01-15T10:30:00Z',
-          ai_generated: true,
-          confidence_score: 0.95
-        },
-        {
-          id: '2',
-          reference: 'JE-002',
-          date: '2024-01-16',
-          description: 'Customer payment received',
-          entries: [
-            {
-              account_code: '1001',
-              account_name: 'Cash',
-              debit_amount: 2500.00,
-              credit_amount: 0,
-              description: 'Customer payment'
-            },
-            {
-              account_code: '4000',
-              account_name: 'Revenue',
-              debit_amount: 0,
-              credit_amount: 2500.00,
-              description: 'Consulting services revenue'
-            }
-          ],
-          total_amount: 2500.00,
-          is_balanced: true,
-          status: 'posted',
-          created_by: user?.first_name || 'User',
-          created_at: '2024-01-16T14:15:00Z'
-        }
-      ]
-      setTransactions(mockTransactions)
+      // Fetch real transactions from API
+      const response = await fetch('http://localhost:3001/api/v1/transactions', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setTransactions(data.transactions || [])
+      } else {
+        // Start with empty transactions for new users
+        setTransactions([])
+      }
     } catch (error) {
       toast.error('Failed to load transactions')
     } finally {

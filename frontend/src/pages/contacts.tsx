@@ -117,70 +117,18 @@ export default function ContactsPage() {
 
   const fetchContacts = async () => {
     try {
-      // Mock contact data for now - in real app this would come from API
-      const mockContacts: Contact[] = [
-        {
-          id: '1',
-          type: 'customer',
-          company_name: 'Acme Corporation',
-          first_name: 'John',
-          last_name: 'Smith',
-          email: 'john.smith@acme.com',
-          phone: '(555) 123-4567',
-          address: '123 Main St',
-          city: 'New York',
-          state: 'NY',
-          zip_code: '10001',
-          country: 'United States',
-          payment_terms: '30',
-          credit_limit: 10000,
-          account_balance: 2500.00,
-          total_invoiced: 15000.00,
-          total_paid: 12500.00,
-          is_active: true,
-          created_at: '2024-01-15T10:30:00Z'
-        },
-        {
-          id: '2',
-          type: 'vendor',
-          company_name: 'Office Supplies Inc',
-          email: 'billing@officesupplies.com',
-          phone: '(555) 987-6543',
-          address: '456 Business Ave',
-          city: 'Chicago',
-          state: 'IL',
-          zip_code: '60601',
-          country: 'United States',
-          tax_id: '12-3456789',
-          payment_terms: '15',
-          account_balance: -850.00,
-          total_invoiced: 5200.00,
-          total_paid: 4350.00,
-          is_active: true,
-          created_at: '2024-01-10T14:20:00Z'
-        },
-        {
-          id: '3',
-          type: 'customer',
-          first_name: 'Sarah',
-          last_name: 'Johnson',
-          email: 'sarah.johnson@email.com',
-          phone: '(555) 456-7890',
-          address: '789 Oak Street',
-          city: 'Los Angeles',
-          state: 'CA',
-          zip_code: '90210',
-          country: 'United States',
-          payment_terms: '15',
-          credit_limit: 5000,
-          account_balance: 1200.00,
-          total_invoiced: 8500.00,
-          total_paid: 7300.00,
-          is_active: true,
-          created_at: '2024-01-12T09:15:00Z'
-        }
-      ]
-      setContacts(mockContacts)
+      // Fetch real contacts from API
+      const response = await fetch('http://localhost:3001/api/v1/contacts', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setContacts(data.contacts || [])
+      } else {
+        // Start with empty contacts for new users
+        setContacts([])
+      }
     } catch (error) {
       toast.error('Failed to load contacts')
     } finally {

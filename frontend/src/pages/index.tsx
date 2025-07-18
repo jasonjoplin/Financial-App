@@ -65,8 +65,8 @@ interface AnalysisResult {
 
 export default function Home() {
   const { user, company, token, login, logout, isLoading } = useAuth()
-  const [email, setEmail] = useState('test@financialai.com')
-  const [password, setPassword] = useState('password123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loginLoading, setLoginLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
   const [signUpData, setSignUpData] = useState({
@@ -78,8 +78,8 @@ export default function Home() {
     company_name: ''
   })
   const [healthData, setHealthData] = useState<HealthData | null>(null)
-  const [transactionDescription, setTransactionDescription] = useState('Office supplies from Staples')
-  const [transactionAmount, setTransactionAmount] = useState('156.78')
+  const [transactionDescription, setTransactionDescription] = useState('')
+  const [transactionAmount, setTransactionAmount] = useState('')
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
 

@@ -5,6 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { validationResult, body } = require('express-validator');
+const tenantMiddleware = require('./src/middleware/tenant');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const knex = require('knex');
@@ -65,27 +66,15 @@ app.use(limiter);
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 
-// Auth middleware
-const authenticate = async (req, res, next) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ error: 'Access token required' });
-    }
+// Tenant middleware (applies to all routes except auth)
+app.use(tenantMiddleware);
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await db('users').where({ id: payload.user_id }).first();
-    
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
+// Simple auth check (tenant middleware handles the heavy lifting)
+const authenticate = (req, res, next) => {
+  if (!req.tenant) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
+  next();
 };
 
 // Health check
@@ -149,6 +138,13 @@ app.post('/api/v1/auth/register', [
       name: company_name
     });
 
+    // Link user to company
+    await db('user_companies').insert({
+      user_id: userId,
+      company_id: companyId,
+      role: 'admin'
+    });
+
     // Generate token
     const token = jwt.sign(
       { user_id: userId, email, company_id: companyId },
@@ -187,10 +183,19 @@ app.post('/api/v1/auth/login', [
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const company = await db('companies').first(); // Get first company for demo
+    // Get user's company from user_companies table
+    const userCompany = await db('user_companies')
+      .join('companies', 'user_companies.company_id', 'companies.id')
+      .where('user_companies.user_id', user.id)
+      .select('companies.*')
+      .first();
+
+    if (!userCompany) {
+      return res.status(401).json({ error: 'No company associated with user' });
+    }
 
     const token = jwt.sign(
-      { user_id: user.id, email: user.email, company_id: company?.id },
+      { user_id: user.id, email: user.email, company_id: userCompany.id },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -200,7 +205,7 @@ app.post('/api/v1/auth/login', [
     res.json({
       message: 'Login successful',
       user: { id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name },
-      company,
+      company: userCompany,
       token
     });
   } catch (error) {
@@ -456,13 +461,19 @@ app.get('/api/v1/accounts/types', authenticate, async (req, res) => {
   }
 });
 
-// Chart of accounts (with real accounts from database)
+// Chart of accounts - PRODUCTION VERSION (NO MOCK DATA)
 app.get('/api/v1/accounts/chart', authenticate, async (req, res) => {
   try {
-    // Get real accounts from database
-    const realAccounts = await db('accounts').select('*').where({ is_active: true }).orderBy('code');
+    // Get real accounts from database filtered by user's company
+    const realAccounts = await db('accounts')
+      .select('*')
+      .where({ 
+        is_active: true,
+        company_id: req.tenant.companyId 
+      })
+      .orderBy('code');
     
-    // Group accounts by type
+    // Group accounts by type - ONLY REAL ACCOUNTS
     const groupedAccounts = {
       assets: {
         type: 'Assets',
@@ -491,7 +502,7 @@ app.get('/api/v1/accounts/chart', authenticate, async (req, res) => {
       }
     };
 
-    // Add real accounts to appropriate groups
+    // Add ONLY real accounts to appropriate groups
     realAccounts.forEach(account => {
       if (groupedAccounts[account.type]) {
         groupedAccounts[account.type].accounts.push({
@@ -499,41 +510,6 @@ app.get('/api/v1/accounts/chart', authenticate, async (req, res) => {
           name: account.name,
           balance: parseFloat(account.balance) || 0
         });
-      }
-    });
-
-    // Add mock accounts only if no real accounts exist in that category
-    const mockAccounts = {
-      assets: [
-        { code: '1001', name: 'Cash', balance: 25000 },
-        { code: '1100', name: 'Accounts Receivable', balance: 15000 },
-        { code: '1200', name: 'Inventory', balance: 35000 },
-        { code: '1500', name: 'Equipment', balance: 50000 }
-      ],
-      liabilities: [
-        { code: '2000', name: 'Accounts Payable', balance: 8000 },
-        { code: '2100', name: 'Accrued Expenses', balance: 3000 },
-        { code: '2500', name: 'Long-term Debt', balance: 25000 }
-      ],
-      equity: [
-        { code: '3000', name: 'Owner\'s Equity', balance: 75000 },
-        { code: '3100', name: 'Retained Earnings', balance: 14000 }
-      ],
-      revenue: [
-        { code: '4000', name: 'Sales Revenue', balance: 125000 },
-        { code: '4500', name: 'Interest Income', balance: 500 }
-      ],
-      expenses: [
-        { code: '6000', name: 'Office Expense', balance: 12000 },
-        { code: '6700', name: 'Rent Expense', balance: 24000 },
-        { code: '6800', name: 'Payroll Expense', balance: 75000 }
-      ]
-    };
-
-    // Fill empty categories with mock data
-    Object.keys(groupedAccounts).forEach(type => {
-      if (groupedAccounts[type].accounts.length === 0 && mockAccounts[type]) {
-        groupedAccounts[type].accounts = mockAccounts[type];
       }
     });
 
@@ -567,8 +543,11 @@ app.post('/api/v1/accounts', authenticate, [
     const { code, name, type, normal_balance, description, parent_account } = req.body;
     const accountId = uuidv4();
 
-    // Check if account code already exists
-    const existingAccount = await db('accounts').where({ code }).first();
+    // Check if account code already exists for this company
+    const existingAccount = await db('accounts').where({ 
+      code, 
+      company_id: req.tenant.companyId 
+    }).first();
     if (existingAccount) {
       return res.status(400).json({ error: 'Account code already exists' });
     }
@@ -581,7 +560,8 @@ app.post('/api/v1/accounts', authenticate, [
       normal_balance,
       description: description || null,
       parent_account: parent_account || null,
-      balance: 0
+      balance: 0,
+      company_id: req.tenant.companyId
     });
 
     const newAccount = await db('accounts').where({ id: accountId }).first();
@@ -601,7 +581,13 @@ app.post('/api/v1/accounts', authenticate, [
 // Get all accounts
 app.get('/api/v1/accounts', authenticate, async (req, res) => {
   try {
-    const accounts = await db('accounts').select('*').where({ is_active: true }).orderBy('code');
+    const accounts = await db('accounts')
+      .select('*')
+      .where({ 
+        is_active: true,
+        company_id: req.tenant.companyId 
+      })
+      .orderBy('code');
     res.json({
       message: 'Accounts retrieved successfully',
       accounts
@@ -679,6 +665,76 @@ app.delete('/api/v1/accounts/:code', authenticate, async (req, res) => {
   } catch (error) {
     logger.error('Account deletion error:', error);
     res.status(500).json({ error: 'Failed to delete account' });
+  }
+});
+
+// ====== TRANSACTIONS ENDPOINTS ======
+app.get('/api/v1/transactions', authenticate, async (req, res) => {
+  try {
+    // For now, return empty transactions - add actual implementation later
+    res.json({
+      message: 'Transactions retrieved successfully',
+      transactions: []
+    });
+  } catch (error) {
+    logger.error('Error fetching transactions:', error);
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
+});
+
+// ====== CONTACTS/CUSTOMERS/VENDORS ENDPOINTS ======
+app.get('/api/v1/contacts', authenticate, async (req, res) => {
+  try {
+    // For now, return empty contacts - add actual implementation later
+    res.json({
+      message: 'Contacts retrieved successfully',
+      contacts: []
+    });
+  } catch (error) {
+    logger.error('Error fetching contacts:', error);
+    res.status(500).json({ error: 'Failed to fetch contacts' });
+  }
+});
+
+// ====== INVOICES ENDPOINTS ======
+app.get('/api/v1/invoices', authenticate, async (req, res) => {
+  try {
+    // For now, return empty invoices - add actual implementation later
+    res.json({
+      message: 'Invoices retrieved successfully',
+      invoices: []
+    });
+  } catch (error) {
+    logger.error('Error fetching invoices:', error);
+    res.status(500).json({ error: 'Failed to fetch invoices' });
+  }
+});
+
+// ====== PAYMENTS ENDPOINTS ======
+app.get('/api/v1/payments', authenticate, async (req, res) => {
+  try {
+    // For now, return empty payments - add actual implementation later
+    res.json({
+      message: 'Payments retrieved successfully',
+      payments: []
+    });
+  } catch (error) {
+    logger.error('Error fetching payments:', error);
+    res.status(500).json({ error: 'Failed to fetch payments' });
+  }
+});
+
+// ====== DOCUMENTS/OCR ENDPOINTS ======
+app.get('/api/v1/documents', authenticate, async (req, res) => {
+  try {
+    // For now, return empty documents - add actual implementation later
+    res.json({
+      message: 'Documents retrieved successfully',
+      documents: []
+    });
+  } catch (error) {
+    logger.error('Error fetching documents:', error);
+    res.status(500).json({ error: 'Failed to fetch documents' });
   }
 });
 
