@@ -213,10 +213,8 @@ cd frontend
 npm test
 ```
 
-### **Test User Credentials**
-For development/testing:
-- Email: `test@example.com`
-- Password: `password123`
+### **Test User Setup**
+For development/testing: Create your own test user account after setup using the registration form.
 
 ## 📈 Features Roadmap
 

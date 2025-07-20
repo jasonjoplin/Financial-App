@@ -118,8 +118,15 @@ export default function Home() {
       const data = await response.json()
 
       if (response.ok) {
-        toast.success('Account created successfully! Logging you in...')
-        await login(signUpData.email, signUpData.password)
+        // Registration successful - use the returned token directly
+        localStorage.setItem('financial-ai-token', data.token)
+        localStorage.setItem('financial-ai-user', JSON.stringify(data.user))
+        localStorage.setItem('financial-ai-company', JSON.stringify(data.company))
+        
+        toast.success(`Welcome, ${data.user.first_name || data.user.name}! Your account has been created.`)
+        
+        // Redirect to dashboard or reload to update auth state
+        window.location.reload()
       } else {
         toast.error(data.error || 'Registration failed')
       }
@@ -236,7 +243,7 @@ export default function Home() {
                 />
               </Box>
               <Grid container spacing={2}>
-                {healthData.features.map((feature, index) => (
+                {healthData.features?.map((feature, index) => (
                   <Grid item xs={12} sm={6} md={4} key={index}>
                     <Box display="flex" alignItems="center" gap={1}>
                       <AutoIcon sx={{ color: '#00f5ff', fontSize: 16 }} />
@@ -245,7 +252,13 @@ export default function Home() {
                       </Typography>
                     </Box>
                   </Grid>
-                ))}
+                )) || (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      No features data available
+                    </Typography>
+                  </Grid>
+                )}
               </Grid>
             </CardContent>
           </Card>
@@ -375,22 +388,13 @@ export default function Home() {
                     </Button>
                   </Box>
 
-                  {!isSignUp && (
-                    <Box mt={3} p={2} bgcolor="rgba(0, 245, 255, 0.1)" borderRadius={2}>
-                      <Typography variant="body2" color="primary">
-                        <strong>Demo Credentials:</strong><br />
-                        Email: test@financialai.com<br />
-                        Password: password123
-                      </Typography>
-                    </Box>
-                  )}
                 </CardContent>
               </Card>
             </Grid>
           ) : (
             /* AI Analysis Section */
             <Grid item xs={12} md={8}>
-              <Card className="glass-card animate-slide-in">
+              <Card className="glass-card animate-slide-in" data-tutorial="ai-analysis-section">
                 <CardContent>
                   <Box display="flex" justifyContent="between" alignItems="center" mb={3}>
                     <Box>

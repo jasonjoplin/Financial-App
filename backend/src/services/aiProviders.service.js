@@ -305,7 +305,7 @@ Transaction Details:
 - Description: ${transactionData.description}
 - Amount: $${transactionData.amount}
 - Date: ${transactionData.date}
-- Company: ${transactionData.company || 'Financial AI Demo Company'}
+- Company: ${transactionData.company || process.env.DEFAULT_COMPANY_NAME || 'Your Company'}
 
 Please provide your response in the following JSON format:
 {

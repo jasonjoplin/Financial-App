@@ -7,7 +7,7 @@
 **Required Setup:**
 - Backend Server: `http://localhost:3001` 
 - Frontend App: `http://localhost:3002`
-- Demo Credentials: `test@financialai.com` / `password123`
+- Demo Credentials: Use your own test account credentials
 
 ---
 
@@ -16,7 +16,7 @@
 ### **Login System**
 - [ ] Visit http://localhost:3002
 - [ ] Verify login form appears for unauthenticated users
-- [ ] Test with demo credentials: `test@financialai.com` / `password123`
+- [ ] Test with your demo credentials
 - [ ] Verify successful login redirects to dashboard
 - [ ] Test invalid credentials show error message
 - [ ] Verify "Remember Me" functionality

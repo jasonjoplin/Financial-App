@@ -34,9 +34,9 @@
 
 ### **1. Login Experience**
 1. Open http://localhost:3000
-2. Use pre-filled credentials:
-   - **Email**: `test@financialai.com`
-   - **Password**: `password123`
+2. Create and use your own test credentials:
+   - **Email**: [your-test-email]
+   - **Password**: [your-test-password]
 3. Click "Login to Financial AI"
 4. **Expected**: Smooth login with welcome message
 
@@ -144,4 +144,4 @@
 ### 🔗 **Quick Links:**
 - **Main App**: http://localhost:3000
 - **Dashboard**: http://localhost:3000/dashboard
-- **Demo Login**: test@financialai.com / password123
+- **Demo Login**: Use your own test credentials

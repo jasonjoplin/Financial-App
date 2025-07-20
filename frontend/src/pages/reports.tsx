@@ -42,11 +42,14 @@ import {
 import { toast } from 'react-hot-toast'
 
 interface Account {
+  id: string
   code: string
   name: string
-  type: string
-  balance: number
+  description?: string
+  opening_balance: string
   normal_balance: string
+  is_system_account: boolean
+  parent_account_id?: string
 }
 
 interface ReportData {
@@ -87,7 +90,7 @@ interface BalanceSheetData {
 }
 
 export default function ReportsPage() {
-  const { token } = useAuth()
+  const { token, company } = useAuth()
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState(0)
   const [reportData, setReportData] = useState<ReportData>({
@@ -104,19 +107,19 @@ export default function ReportsPage() {
   })
 
   useEffect(() => {
-    if (token) {
+    if (token && company) {
       fetchReportData()
     }
-  }, [token, dateRange])
+  }, [token, company, dateRange])
 
   const fetchReportData = async () => {
-    if (!token) {
+    if (!token || !company) {
       setLoading(false)
       return
     }
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/accounts/chart`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/accounts/${company.id}/chart`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -124,12 +127,25 @@ export default function ReportsPage() {
       
       if (response.ok) {
         const chartData = data.chart_of_accounts
+        // Extract accounts from nested category structure
+        const extractAccounts = (accountType: any) => {
+          const accounts: any[] = []
+          if (accountType && accountType.categories) {
+            Object.values(accountType.categories).forEach((category: any) => {
+              if (category.accounts && Array.isArray(category.accounts)) {
+                accounts.push(...category.accounts)
+              }
+            })
+          }
+          return accounts
+        }
+
         setReportData({
-          assets: chartData.assets?.accounts || [],
-          liabilities: chartData.liabilities?.accounts || [],
-          equity: chartData.equity?.accounts || [],
-          revenue: chartData.revenue?.accounts || [],
-          expenses: chartData.expenses?.accounts || []
+          assets: extractAccounts(chartData.A),
+          liabilities: extractAccounts(chartData.L),
+          equity: extractAccounts(chartData.E),
+          revenue: extractAccounts(chartData.R),
+          expenses: extractAccounts(chartData.X)
         })
       } else {
         toast.error('Failed to load report data')
@@ -142,8 +158,8 @@ export default function ReportsPage() {
   }
 
   const generateProfitLoss = (): ProfitLossData => {
-    const revenueTotal = reportData.revenue.reduce((sum, acc) => sum + acc.balance, 0)
-    const expensesTotal = reportData.expenses.reduce((sum, acc) => sum + acc.balance, 0)
+    const revenueTotal = reportData.revenue.reduce((sum, acc) => sum + (parseFloat(acc.opening_balance) || 0), 0)
+    const expensesTotal = reportData.expenses.reduce((sum, acc) => sum + (parseFloat(acc.opening_balance) || 0), 0)
     
     return {
       revenue: {
@@ -174,9 +190,9 @@ export default function ReportsPage() {
       acc.code.startsWith('2') && parseInt(acc.code) >= 2500
     )
 
-    const assetsTotal = reportData.assets.reduce((sum, acc) => sum + acc.balance, 0)
-    const liabilitiesTotal = reportData.liabilities.reduce((sum, acc) => sum + acc.balance, 0)
-    const equityTotal = reportData.equity.reduce((sum, acc) => sum + acc.balance, 0)
+    const assetsTotal = reportData.assets.reduce((sum, acc) => sum + (parseFloat(acc.opening_balance) || 0), 0)
+    const liabilitiesTotal = reportData.liabilities.reduce((sum, acc) => sum + (parseFloat(acc.opening_balance) || 0), 0)
+    const equityTotal = reportData.equity.reduce((sum, acc) => sum + (parseFloat(acc.opening_balance) || 0), 0)
 
     return {
       assets: {
@@ -207,11 +223,11 @@ export default function ReportsPage() {
 
     const totalDebits = allAccounts
       .filter(acc => acc.normal_balance === 'debit')
-      .reduce((sum, acc) => sum + Math.max(0, acc.balance), 0)
+      .reduce((sum, acc) => sum + Math.max(0, parseFloat(acc.opening_balance) || 0), 0)
     
     const totalCredits = allAccounts
       .filter(acc => acc.normal_balance === 'credit')
-      .reduce((sum, acc) => sum + Math.max(0, acc.balance), 0)
+      .reduce((sum, acc) => sum + Math.max(0, parseFloat(acc.opening_balance) || 0), 0)
 
     return {
       accounts: allAccounts.sort((a, b) => a.code.localeCompare(b.code)),
@@ -330,7 +346,7 @@ export default function ReportsPage() {
         </Card>
 
         {/* Report Tabs */}
-        <Card className="glass-card">
+        <Card className="glass-card" data-tutorial="reports-section">
           <Tabs 
             value={activeTab} 
             onChange={(_, newValue) => setActiveTab(newValue)}
@@ -393,7 +409,7 @@ export default function ReportsPage() {
                           </TableCell>
                           <TableCell align="right">
                             <Typography variant="body2" sx={{ color: '#00e676' }}>
-                              ${account.balance.toLocaleString()}
+                              ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                             </Typography>
                           </TableCell>
                         </TableRow>
@@ -443,7 +459,7 @@ export default function ReportsPage() {
                           </TableCell>
                           <TableCell align="right">
                             <Typography variant="body2" sx={{ color: '#f44336' }}>
-                              ${account.balance.toLocaleString()}
+                              ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                             </Typography>
                           </TableCell>
                         </TableRow>
@@ -509,7 +525,7 @@ export default function ReportsPage() {
                             <TableRow key={account.code}>
                               <TableCell>{account.name}</TableCell>
                               <TableCell align="right">
-                                ${account.balance.toLocaleString()}
+                                ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -530,7 +546,7 @@ export default function ReportsPage() {
                             <TableRow key={account.code}>
                               <TableCell>{account.name}</TableCell>
                               <TableCell align="right">
-                                ${account.balance.toLocaleString()}
+                                ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -564,7 +580,7 @@ export default function ReportsPage() {
                             <TableRow key={account.code}>
                               <TableCell>{account.name}</TableCell>
                               <TableCell align="right">
-                                ${account.balance.toLocaleString()}
+                                ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -584,7 +600,7 @@ export default function ReportsPage() {
                             <TableRow key={account.code}>
                               <TableCell>{account.name}</TableCell>
                               <TableCell align="right">
-                                ${account.balance.toLocaleString()}
+                                ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -605,7 +621,7 @@ export default function ReportsPage() {
                           <TableRow key={account.code}>
                             <TableCell>{account.name}</TableCell>
                             <TableCell align="right">
-                              ${account.balance.toLocaleString()}
+                              ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -675,20 +691,20 @@ export default function ReportsPage() {
                             {account.name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {account.type}
+                            {account.description || account.code}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
-                          {account.normal_balance === 'debit' && account.balance > 0 && (
+                          {account.normal_balance === 'debit' && (parseFloat(account.opening_balance) || 0) > 0 && (
                             <Typography variant="body2" sx={{ color: '#00e676' }}>
-                              ${account.balance.toLocaleString()}
+                              ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                             </Typography>
                           )}
                         </TableCell>
                         <TableCell align="right">
-                          {account.normal_balance === 'credit' && account.balance > 0 && (
+                          {account.normal_balance === 'credit' && (parseFloat(account.opening_balance) || 0) > 0 && (
                             <Typography variant="body2" sx={{ color: '#ff9800' }}>
-                              ${account.balance.toLocaleString()}
+                              ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                             </Typography>
                           )}
                         </TableCell>

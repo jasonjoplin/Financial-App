@@ -238,10 +238,11 @@ A complete, production-ready **Financial AI Application** with advanced accounti
 - **API documentation** in code comments
 - **Database schema documentation**
 
-### **Demo Credentials**
-- **Email:** test@financialai.com
-- **Password:** password123
-- **Company:** Financial AI Demo Company
+### **Demo Setup**
+Create your own demo account using the registration form:
+- **Email:** [your-demo-email]
+- **Password:** [your-demo-password]
+- **Company:** [your-demo-company]
 
 ---
 

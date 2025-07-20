@@ -76,7 +76,7 @@ const accountTypes = [
 ]
 
 export default function AccountsPage() {
-  const { token } = useAuth()
+  const { token, company } = useAuth()
   const [chartData, setChartData] = useState<ChartOfAccounts>({})
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -91,19 +91,19 @@ export default function AccountsPage() {
   })
 
   useEffect(() => {
-    if (token) {
+    if (token && company) {
       fetchChartOfAccounts()
     }
-  }, [token])
+  }, [token, company])
 
   const fetchChartOfAccounts = async () => {
-    if (!token) {
+    if (!token || !company) {
       setLoading(false)
       return
     }
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/accounts/chart`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/accounts/${company.id}/chart`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -203,8 +203,16 @@ export default function AccountsPage() {
 
   const calculateTotals = () => {
     const totals: { [key: string]: number } = {}
-    Object.entries(chartData).forEach(([key, group]) => {
-      totals[key] = group.accounts.reduce((sum, account) => sum + account.balance, 0)
+    Object.entries(chartData).forEach(([key, accountType]) => {
+      let typeTotal = 0
+      if (accountType && accountType.categories) {
+        Object.values(accountType.categories).forEach((category: any) => {
+          if (category.accounts && Array.isArray(category.accounts)) {
+            typeTotal += category.accounts.reduce((sum, account) => sum + (parseFloat(account.opening_balance) || 0), 0)
+          }
+        })
+      }
+      totals[key] = typeTotal
     })
     return totals
   }
@@ -274,7 +282,7 @@ export default function AccountsPage() {
                     </Box>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    {chartData[type.value]?.accounts?.length || 0} accounts
+                    {Object.values(chartData[type.value]?.categories || {}).reduce((total, category: any) => total + (category.accounts?.length || 0), 0)} accounts
                   </Typography>
                 </CardContent>
               </Card>
@@ -283,7 +291,17 @@ export default function AccountsPage() {
         </Grid>
 
         {/* Account Groups */}
-        {Object.entries(chartData).map(([key, group]) => (
+        <div data-tutorial="chart-of-accounts">
+        {Object.entries(chartData).map(([key, accountType]) => {
+          // Count total accounts in this type
+          let totalAccounts = 0
+          if (accountType && accountType.categories) {
+            Object.values(accountType.categories).forEach((category: any) => {
+              if (category.accounts) totalAccounts += category.accounts.length
+            })
+          }
+          
+          return (
           <Accordion key={key} className="glass-card" sx={{ mb: 2 }} defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Box display="flex" alignItems="center" gap={2} width="100%">
@@ -292,10 +310,10 @@ export default function AccountsPage() {
                 </Box>
                 <Box flexGrow={1}>
                   <Typography variant="h6" className="gradient-text">
-                    {group.type} Accounts
+                    {accountType.type_name} Accounts
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Normal Balance: {group.normal_balance.toUpperCase()} • {group.accounts.length} accounts
+                    Normal Balance: {accountType.normal_balance.toUpperCase()} • {totalAccounts} accounts
                   </Typography>
                 </Box>
                 <Chip 
@@ -309,19 +327,25 @@ export default function AccountsPage() {
               </Box>
             </AccordionSummary>
             <AccordionDetails>
-              <TableContainer component={Paper} sx={{ bgcolor: 'rgba(20, 27, 45, 0.5)' }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Code</TableCell>
-                      <TableCell>Account Name</TableCell>
-                      <TableCell align="right">Current Balance</TableCell>
-                      <TableCell align="right">Health</TableCell>
-                      <TableCell align="center">Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {group.accounts.map((account) => (
+              {Object.entries(accountType.categories || {}).map(([catKey, category]) => (
+                <Box key={catKey} mb={3}>
+                  <Typography variant="subtitle1" color="primary" gutterBottom sx={{ mb: 2 }}>
+                    {category.category_name}
+                  </Typography>
+                  
+                  <TableContainer component={Paper} sx={{ bgcolor: 'rgba(20, 27, 45, 0.5)', mb: 2 }}>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Code</TableCell>
+                          <TableCell>Account Name</TableCell>
+                          <TableCell align="right">Current Balance</TableCell>
+                          <TableCell align="right">Health</TableCell>
+                          <TableCell align="center">Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {category.accounts.map((account) => (
                       <TableRow key={account.code} hover>
                         <TableCell>
                           <Chip 
@@ -347,22 +371,22 @@ export default function AccountsPage() {
                           <Typography 
                             variant="body2"
                             fontWeight="bold"
-                            color={account.balance >= 0 ? 'inherit' : 'error'}
+                            color={(parseFloat(account.opening_balance) || 0) >= 0 ? 'inherit' : 'error'}
                           >
-                            ${account.balance.toLocaleString()}
+                            ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
                           <LinearProgress
                             variant="determinate"
-                            value={Math.min(100, (Math.abs(account.balance) / 50000) * 100)}
+                            value={Math.min(100, (Math.abs(parseFloat(account.opening_balance) || 0) / 50000) * 100)}
                             sx={{
                               width: 60,
                               height: 8,
                               borderRadius: 4,
                               backgroundColor: 'rgba(255,255,255,0.1)',
                               '& .MuiLinearProgress-bar': {
-                                backgroundColor: Math.abs(account.balance) > 25000 ? '#00e676' : '#ff9800'
+                                backgroundColor: Math.abs(parseFloat(account.opening_balance) || 0) > 25000 ? '#00e676' : '#ff9800'
                               }
                             }}
                           />
@@ -385,12 +409,16 @@ export default function AccountsPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </AccordionDetails>
-          </Accordion>
-        ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Box>
+                ))}
+              </AccordionDetails>
+            </Accordion>
+          )
+        })}
+        </div>
 
         {/* GAAP Compliance Alert */}
         <Alert severity="info" sx={{ mt: 3 }}>
@@ -405,6 +433,7 @@ export default function AccountsPage() {
           color="primary"
           aria-label="add account"
           onClick={() => handleOpenDialog()}
+          data-tutorial="create-account-button"
           sx={{
             position: 'fixed',
             bottom: 16,

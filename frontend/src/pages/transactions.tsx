@@ -85,7 +85,7 @@ interface Account {
 }
 
 export default function TransactionsPage() {
-  const { token, user } = useAuth()
+  const { token, user, company } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
@@ -118,16 +118,18 @@ export default function TransactionsPage() {
   })
 
   useEffect(() => {
-    if (token) {
+    if (token && company) {
       fetchTransactions()
       fetchAccounts()
     }
-  }, [token])
+  }, [token, company])
 
   const fetchTransactions = async () => {
+    if (!company) return
+    
     try {
       // Fetch real transactions from API
-      const response = await fetch('http://localhost:3001/api/v1/transactions', {
+      const response = await fetch(`http://localhost:3001/api/v1/${company.id}/transactions`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -146,12 +148,12 @@ export default function TransactionsPage() {
   }
 
   const fetchAccounts = async () => {
-    if (!token) {
+    if (!token || !company) {
       return
     }
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/accounts/chart`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/accounts/${company.id}/chart`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
@@ -159,8 +161,12 @@ export default function TransactionsPage() {
       
       if (response.ok) {
         const allAccounts: Account[] = []
-        Object.values(data.chart_of_accounts).forEach((group: any) => {
-          allAccounts.push(...group.accounts)
+        Object.values(data.chart_of_accounts).forEach((accountType: any) => {
+          Object.values(accountType.categories).forEach((category: any) => {
+            if (category.accounts && Array.isArray(category.accounts)) {
+              allAccounts.push(...category.accounts)
+            }
+          })
         })
         setAccounts(allAccounts)
       }
@@ -241,31 +247,60 @@ export default function TransactionsPage() {
     }
 
     try {
-      // In real app, this would save to backend
-      const newTransaction: Transaction = {
-        id: String(Date.now()),
+      const transactionData = {
         reference: formData.reference,
         date: formData.date,
         description: formData.description,
-        entries: formData.entries,
-        total_amount: formData.entries.reduce((sum, entry) => sum + (entry.debit_amount || entry.credit_amount), 0) / 2,
-        is_balanced: true,
-        status: 'draft',
-        created_by: user?.first_name || 'User',
-        created_at: new Date().toISOString()
+        entries: formData.entries.map(entry => ({
+          account_code: entry.account_code,
+          debit_amount: entry.debit_amount || 0,
+          credit_amount: entry.credit_amount || 0,
+          description: entry.description
+        }))
       }
 
       if (editingTransaction) {
-        setTransactions(prev => prev.map(t => t.id === editingTransaction.id ? newTransaction : t))
-        toast.success('Transaction updated!')
+        // Update existing transaction
+        const response = await fetch(`http://localhost:3001/api/v1/transactions/${editingTransaction.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(transactionData)
+        })
+
+        if (response.ok) {
+          toast.success('Transaction updated!')
+          fetchTransactions() // Refresh the list
+        } else {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to update transaction')
+        }
       } else {
-        setTransactions(prev => [newTransaction, ...prev])
-        toast.success('Transaction created!')
+        // Create new transaction
+        const response = await fetch('http://localhost:3001/api/v1/transactions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(transactionData)
+        })
+
+        if (response.ok) {
+          toast.success('Transaction created!')
+          fetchTransactions() // Refresh the list
+        } else {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to create transaction')
+        }
       }
 
       handleCloseDialog()
     } catch (error) {
-      toast.error('Failed to save transaction')
+      console.error('Error saving transaction:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to save transaction')
     }
   }
 
@@ -425,7 +460,7 @@ export default function TransactionsPage() {
         </Grid>
 
         {/* Filters */}
-        <Card className="glass-card" sx={{ mb: 3 }}>
+        <Card className="glass-card" sx={{ mb: 3 }} data-tutorial="transaction-filters">
           <CardContent>
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} sm={6} md={3}>
@@ -467,7 +502,7 @@ export default function TransactionsPage() {
         </Card>
 
         {/* Transactions Table */}
-        <Card className="glass-card">
+        <Card className="glass-card" data-tutorial="transactions-list">
           <CardContent>
             <TableContainer>
               <Table>

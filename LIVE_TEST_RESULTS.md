@@ -18,10 +18,10 @@
 ✅ **JWT Security**: Secure token-based authentication
 ✅ **Session Management**: Proper token validation and expiration
 
-**Test User Created:**
-- 📧 Email: `test@financialai.com`
-- 🔑 Password: `password123`
-- 🏢 Company: `Test Financial Company`
+**Test User Setup:**
+- 📧 Email: [test-user-email]
+- 🔑 Password: [test-user-password]
+- 🏢 Company: [test-company-name]
 
 ---
 

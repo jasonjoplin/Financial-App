@@ -57,19 +57,19 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (token) {
+    if (token && company) {
       fetchChartOfAccounts()
     }
-  }, [token])
+  }, [token, company])
 
   const fetchChartOfAccounts = async () => {
-    if (!token) {
+    if (!token || !company) {
       setLoading(false)
       return
     }
     
     try {
-      const response = await fetch('http://localhost:3001/api/v1/accounts/chart', {
+      const response = await fetch(`http://localhost:3001/api/v1/accounts/${company.id}/chart`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -83,6 +83,7 @@ export default function Dashboard() {
         toast.error('Failed to load chart of accounts')
       }
     } catch (error) {
+      console.error('Failed to fetch chart data:', error)
       toast.error('Connection error')
     } finally {
       setLoading(false)
@@ -107,7 +108,9 @@ export default function Dashboard() {
 
   // Calculate totals
   const calculateTotals = () => {
-    if (!chartData) return { assets: 0, liabilities: 0, equity: 0, revenue: 0, expenses: 0 }
+    if (!chartData || !chartData.chart_of_accounts) {
+      return { assets: 0, liabilities: 0, equity: 0, revenue: 0, expenses: 0 }
+    }
     
     const totals = {
       assets: 0,
@@ -117,13 +120,21 @@ export default function Dashboard() {
       expenses: 0,
     }
 
-    Object.entries(chartData.chart_of_accounts).forEach(([key, group]) => {
-      const total = group.accounts.reduce((sum, account) => sum + account.balance, 0)
-      if (key === 'assets') totals.assets = total
-      if (key === 'liabilities') totals.liabilities = total
-      if (key === 'equity') totals.equity = total
-      if (key === 'revenue') totals.revenue = total
-      if (key === 'expenses') totals.expenses = total
+    Object.entries(chartData.chart_of_accounts).forEach(([key, accountType]) => {
+      if (accountType && accountType.categories) {
+        let typeTotal = 0
+        Object.values(accountType.categories).forEach((category: any) => {
+          if (category.accounts && Array.isArray(category.accounts)) {
+            typeTotal += category.accounts.reduce((sum, account) => sum + (parseFloat(account.opening_balance) || 0), 0)
+          }
+        })
+        
+        if (key === 'A') totals.assets = typeTotal
+        if (key === 'L') totals.liabilities = typeTotal
+        if (key === 'E') totals.equity = typeTotal
+        if (key === 'R') totals.revenue = typeTotal
+        if (key === 'X') totals.expenses = typeTotal
+      }
     })
 
     return totals
@@ -241,24 +252,30 @@ export default function Dashboard() {
                   📋 Chart of Accounts
                 </Typography>
                 
-                {chartData && Object.entries(chartData.chart_of_accounts).map(([key, group]) => (
+                {chartData && Object.entries(chartData.chart_of_accounts).map(([key, accountType]) => (
                   <Box key={key} mb={3}>
                     <Typography variant="h6" color="primary" gutterBottom>
-                      {group.type} ({group.normal_balance.toUpperCase()})
+                      {accountType.type_name} ({accountType.normal_balance.toUpperCase()})
                     </Typography>
                     
-                    <TableContainer component={Paper} sx={{ bgcolor: 'rgba(20, 27, 45, 0.5)' }}>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Code</TableCell>
-                            <TableCell>Account Name</TableCell>
-                            <TableCell align="right">Balance</TableCell>
-                            <TableCell align="right">Health</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {group.accounts.map((account) => (
+                    {Object.entries(accountType.categories).map(([catKey, category]) => (
+                      <Box key={catKey} mb={2}>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ ml: 2 }}>
+                          {category.category_name}
+                        </Typography>
+                        
+                        <TableContainer component={Paper} sx={{ bgcolor: 'rgba(20, 27, 45, 0.5)', ml: 1 }}>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Code</TableCell>
+                                <TableCell>Account Name</TableCell>
+                                <TableCell align="right">Balance</TableCell>
+                                <TableCell align="right">Health</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {category.accounts.map((account) => (
                             <TableRow key={account.code} hover>
                               <TableCell>
                                 <Chip 
@@ -273,31 +290,33 @@ export default function Dashboard() {
                                 <Typography 
                                   variant="body2"
                                   fontWeight="bold"
-                                  color={account.balance >= 0 ? 'inherit' : 'error'}
+                                  color={(parseFloat(account.opening_balance) || 0) >= 0 ? 'inherit' : 'error'}
                                 >
-                                  ${account.balance.toLocaleString()}
+                                  ${(parseFloat(account.opening_balance) || 0).toLocaleString()}
                                 </Typography>
                               </TableCell>
                               <TableCell align="right">
                                 <LinearProgress
                                   variant="determinate"
-                                  value={Math.min(100, (account.balance / 50000) * 100)}
+                                  value={Math.min(100, ((parseFloat(account.opening_balance) || 0) / 50000) * 100)}
                                   sx={{
                                     width: 60,
                                     height: 8,
                                     borderRadius: 4,
                                     backgroundColor: 'rgba(255,255,255,0.1)',
                                     '& .MuiLinearProgress-bar': {
-                                      backgroundColor: account.balance > 25000 ? '#00e676' : '#ff9800'
+                                      backgroundColor: (parseFloat(account.opening_balance) || 0) > 25000 ? '#00e676' : '#ff9800'
                                     }
                                   }}
                                 />
                               </TableCell>
                             </TableRow>
                           ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Box>
+                    ))}
                   </Box>
                 ))}
               </CardContent>
